@@ -6,8 +6,14 @@ import numpy as np
 # ---------------------------------------------------------------------
 # Project root
 # ---------------------------------------------------------------------
-
-PROJECT_ROOT = Path("/workspace/ECG")
+# Ha nem a Colab-ban vagyunk:
+if os.environ.get("COLAB_GPU") is None:
+    PROJECT_ROOT = Path("/workspace/ECG")
+else:
+    # Ha a Colab-ban vagyunk, akkor a PROJECT_ROOT környezeti változót használjuk.
+    PROJECT_ROOT = Path(
+        os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[1]
+    ).resolve()
 
 # ---------------------------------------------------------------------
 # Label-space config
@@ -23,10 +29,10 @@ LABEL_MODE = "ternary_n_v_other"
 # ---------------------------------------------------------------------
 DATA_DIR    = PROJECT_ROOT / "data"
 RAW_DIR     = DATA_DIR / "raw"
-OUTPUT_DIR  = PROJECT_ROOT  / "outputs" / LABEL_MODE
+OUTPUT_DIR  = PROJECT_ROOT / "outputs" / LABEL_MODE
 INTERIM_DIR = DATA_DIR / "interim" / LABEL_MODE
 
-for d in [DATA_DIR, RAW_DIR, INTERIM_DIR, OUTPUT_DIR]:
+for d in [DATA_DIR, RAW_DIR, INTERIM_DIR, OUTPUT_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------

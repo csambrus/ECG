@@ -2,19 +2,60 @@
 
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+import shutil
 import wfdb
 
 from src.config import get_ds_par
 
-def is_record_downloaded(record_name: str) -> bool:
+def is_record_downloaded(record_name: str, raw_dir: Path | str | None = None) -> bool:
     """
     Ellenőrzi, hogy minden szükséges fájl megvan-e.
     """
+    base = Path(raw_dir) if raw_dir is not None else Path(get_ds_par("mitbih", "raw_dir"))
     required_ext = [".dat", ".hea", ".atr"]
     for ext in required_ext:
-        if not (get_ds_par("mitbih", "raw_dir") / f"{record_name}{ext}").exists():
+        if not (base / f"{record_name}{ext}").exists():
             return False
     return True
+
+
+def mitbih_raw_complete(raw_dir: Path | str, records: list[str] | None = None) -> bool:
+    raw_path = Path(raw_dir)
+    recs = records if records is not None else list(get_ds_par("mitbih", "records"))
+    return all(is_record_downloaded(r, raw_path) for r in recs)
+
+
+def sync_mitbih_with_gdrive(gdrive_data_raw: Path, *, verbose: bool = False) -> None:
+    """
+    Ha a ``gdrive_data_raw/mitbih`` alatt megvan az összes MIT-BIH rekord, bemásolja a
+    projekt ``DATA_DIR/raw/mitbih`` mappájába.
+
+    Ha nincs teljes másolat, ``download_mitbih_paralel()`` lefut, majd a helyi raw
+    ``mitbih`` tartalma bemásolódik a Drive ``gdrive_data_raw/mitbih`` alá.
+    """
+    gdrive_raw = Path(gdrive_data_raw)
+    gdrive_mitbih = gdrive_raw / "mitbih"
+    local_mitbih = Path(get_ds_par("mitbih", "raw_dir"))
+    records = list(get_ds_par("mitbih", "records"))
+
+    local_mitbih.mkdir(parents=True, exist_ok=True)
+    gdrive_mitbih.parent.mkdir(parents=True, exist_ok=True)
+
+    def _mirror(src: Path, dst: Path) -> None:
+        dst.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(src, dst, dirs_exist_ok=True)
+
+    if mitbih_raw_complete(gdrive_mitbih, records):
+        if verbose:
+            print(f"[MITBIH] Drive-on lévő másolás: {gdrive_mitbih} -> {local_mitbih}")
+        _mirror(gdrive_mitbih, local_mitbih)
+    else:
+        if verbose:
+            print("[MITBIH] Nincs teljes adat a Drive-on – letöltés, majd mentés Drive-ra …")
+        download_mitbih_paralel(verbose=verbose)
+        if verbose:
+            print(f"[MITBIH] Lokális -> Drive: {local_mitbih} -> {gdrive_mitbih}")
+        _mirror(local_mitbih, gdrive_mitbih)
 
 
 def download_record(record_name: str, verbose: bool = False):
