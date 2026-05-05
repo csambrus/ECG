@@ -31,6 +31,7 @@ DATA_DIR    = PROJECT_ROOT / "data"
 RAW_DIR     = DATA_DIR / "raw"
 OUTPUT_DIR  = PROJECT_ROOT / "outputs" / LABEL_MODE
 INTERIM_DIR = DATA_DIR / "interim" / LABEL_MODE
+LOGS_DIR    = PROJECT_ROOT / "logs"
 
 for d in [DATA_DIR, RAW_DIR, INTERIM_DIR, OUTPUT_DIR, LOGS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
