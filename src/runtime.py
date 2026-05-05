@@ -6,13 +6,6 @@ import time
 from tqdm import tqdm as notebook_tqdm
 import numpy as np
 import random
-from src.config import SEED
-
-def set_seed(seed: int = SEED) -> None:
-    random.seed(seed)
-    np.random.seed(seed)
-    tf.random.set_seed(seed)
-
 
 def setup_tensorflow_runtime(verbose: bool = True) -> bool:
     """
